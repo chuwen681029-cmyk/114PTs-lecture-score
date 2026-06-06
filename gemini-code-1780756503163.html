@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>學術活動總表：學生報告分數配對互動軌跡圖</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 25px;
+        }
+        .chart-container {
+            position: relative;
+            height: 520px;
+            width: 100%;
+        }
+        .instructions {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .btn-reset {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 15px;
+        }
+        .btn-reset:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>學術活動總表：學生報告分數配對互動軌跡圖</h1>
+    <div class="subtitle">追蹤同一個學術報告在不同評審老師手上的評分波動，揭示評審個人風格與指標偏好偏誤</div>
+    
+    <div class="instructions">
+        <strong>💡 會議互動操作指南（學術活動）：</strong><br>
+        1. <strong>橫軸（X軸）</strong>已由左至右依據「老師平均給分最低到最高」排序。線條整體左低右高是正常的，若出現交叉代表評審共識低。<br>
+        2. <strong>滑鼠游標移到線條上</strong>可單獨查看該報告的各評審得分。<br>
+        3. <strong>點擊圖表中的任意圓點</strong>，將會單獨高亮（Highlight）該位學生的分數軌跡，其他線條會變淡，適合展示特定學生被「大洗牌」的現象。
+    </div>
+
+    <div class="chart-container">
+        <canvas id="interactionChart"></canvas>
+    </div>
+    
+    <button class="btn-reset" onclick="resetHighlight()">重置圖表（恢復顯示全員）</button>
+</div>
+
+<script>
+    const ctx = document.getElementById('interactionChart').getContext('2d');
+    const originalLabels = ["PT3", "PTV", "PTG", "PTA", "PTS", "PTW", "PTJ", "PT2", "PTU", "PTQ", "PTH", "PTI", "PTN", "PTC", "PTB", "PTP", "PTY"];
+    
+    // 這裡已完美注入您的 Excel 原始學術評分數據
+    const datasetsData = [
+        {"label": "學生 1140701", "data": [null, null, 86.13, 88.75, null, null, null, null, null, null, null, 90.62, null, null, null, null, null], "borderColor": "hsla(0, 60%, 65%, 0.4)", "backgroundColor": "hsla(0, 60%, 65%, 0.4)", "activeColor": "hsla(0, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140702", "data": [null, 77.12, null, null, null, null, null, null, null, null, null, 79.16, null, null, null, null, null], "borderColor": "hsla(13, 60%, 65%, 0.4)", "backgroundColor": "hsla(13, 60%, 65%, 0.4)", "activeColor": "hsla(13, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140703", "data": [null, null, null, null, null, null, null, null, null, 85.0, 93.33, null, null, null, null, null, null], "borderColor": "hsla(26, 60%, 65%, 0.4)", "backgroundColor": "hsla(26, 60%, 65%, 0.4)", "activeColor": "hsla(26, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140704", "data": [75.83, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(40, 60%, 65%, 0.4)", "backgroundColor": "hsla(40, 60%, 65%, 0.4)", "activeColor": "hsla(40, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140705", "data": [null, null, null, 83.33, null, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(53, 60%, 65%, 0.4)", "backgroundColor": "hsla(53, 60%, 65%, 0.4)", "activeColor": "hsla(53, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140706", "data": [null, null, null, null, null, null, null, 90.0, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(66, 60%, 65%, 0.4)", "backgroundColor": "hsla(66, 60%, 65%, 0.4)", "activeColor": "hsla(66, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140707", "data": [null, null, null, null, 79.5, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(80, 60%, 65%, 0.4)", "backgroundColor": "hsla(80, 60%, 65%, 0.4)", "activeColor": "hsla(80, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140708", "data": [null, null, null, null, null, null, null, null, null, null, null, null, null, 86.67, null, null, null], "borderColor": "hsla(93, 60%, 65%, 0.4)", "backgroundColor": "hsla(93, 60%, 65%, 0.4)", "activeColor": "hsla(93, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140709", "data": [null, null, null, null, null, null, null, 90.0, null, 77.92, null, null, null, null, null, null, null], "borderColor": "hsla(106, 60%, 65%, 0.4)", "backgroundColor": "hsla(106, 60%, 65%, 0.4)", "activeColor": "hsla(106, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140710", "data": [null, null, null, null, null, null, null, null, null, null, null, 84.5, null, null, null, null, null], "borderColor": "hsla(120, 60%, 65%, 0.4)", "backgroundColor": "hsla(120, 60%, 65%, 0.4)", "activeColor": "hsla(120, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140711", "data": [null, null, null, null, null, null, null, null, null, 91.5, null, null, null, null, null, null, null], "borderColor": "hsla(133, 60%, 65%, 0.4)", "backgroundColor": "hsla(133, 60%, 65%, 0.4)", "activeColor": "hsla(133, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140712", "data": [null, null, null, 81.25, null, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(146, 60%, 65%, 0.4)", "backgroundColor": "hsla(146, 60%, 65%, 0.4)", "activeColor": "hsla(146, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140713", "data": [null, null, null, null, 75.0, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(160, 60%, 65%, 0.4)", "backgroundColor": "hsla(160, 60%, 65%, 0.4)", "activeColor": "hsla(160, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140714", "data": [68.75, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(173, 60%, 65%, 0.4)", "backgroundColor": "hsla(173, 60%, 65%, 0.4)", "activeColor": "hsla(173, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1140715", "data": [null, null, null, null, null, null, null, 70.0, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(186, 60%, 65%, 0.4)", "backgroundColor": "hsla(186, 60%, 65%, 0.4)", "activeColor": "hsla(186, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141101", "data": [null, null, null, null, null, null, null, 90.0, null, 82.08, null, null, null, null, null, null, null], "borderColor": "hsla(200, 60%, 65%, 0.4)", "backgroundColor": "hsla(200, 60%, 65%, 0.4)", "activeColor": "hsla(200, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141102", "data": [null, null, null, null, null, 83.33, null, null, null, null, 81.25, null, null, null, null, null, null], "borderColor": "hsla(213, 60%, 65%, 0.4)", "backgroundColor": "hsla(213, 60%, 65%, 0.4)", "activeColor": "hsla(213, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141103", "data": [null, null, null, null, null, null, null, null, 85.0, null, null, null, null, null, null, null, null], "borderColor": "hsla(226, 60%, 65%, 0.4)", "backgroundColor": "hsla(226, 60%, 65%, 0.4)", "activeColor": "hsla(226, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141104", "data": [null, null, null, null, null, null, null, null, null, 88.12, null, null, null, null, null, null, null], "borderColor": "hsla(240, 60%, 65%, 0.4)", "backgroundColor": "hsla(240, 60%, 65%, 0.4)", "activeColor": "hsla(240, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141105", "data": [null, null, null, 81.25, null, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(253, 60%, 65%, 0.4)", "backgroundColor": "hsla(253, 60%, 65%, 0.4)", "activeColor": "hsla(253, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141106", "data": [null, null, null, null, 80.0, null, null, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(266, 60%, 65%, 0.4)", "backgroundColor": "hsla(266, 60%, 65%, 0.4)", "activeColor": "hsla(266, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141107", "data": [null, null, null, null, null, null, null, null, null, null, 81.25, null, null, null, null, null, null], "borderColor": "hsla(280, 60%, 65%, 0.4)", "backgroundColor": "hsla(280, 60%, 65%, 0.4)", "activeColor": "hsla(280, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141108", "data": [null, null, null, null, null, null, null, null, null, null, null, null, 85.84, null, null, null, null], "borderColor": "hsla(293, 60%, 65%, 0.4)", "backgroundColor": "hsla(293, 60%, 65%, 0.4)", "activeColor": "hsla(293, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141109", "data": [null, null, null, null, null, null, null, null, null, null, null, null, null, 83.33, null, null, null], "borderColor": "hsla(306, 60%, 65%, 0.4)", "backgroundColor": "hsla(306, 60%, 65%, 0.4)", "activeColor": "hsla(306, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141110", "data": [null, null, null, null, null, null, null, 90.0, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(320, 60%, 65%, 0.4)", "backgroundColor": "hsla(320, 60%, 65%, 0.4)", "activeColor": "hsla(320, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141113", "data": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, 88.0, 84.4, 91.56], "borderColor": "hsla(333, 60%, 65%, 0.4)", "backgroundColor": "hsla(333, 60%, 65%, 0.4)", "activeColor": "hsla(333, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true},
+        {"label": "學生 1141114", "data": [null, null, null, null, null, null, 86.25, null, null, null, null, null, null, null, null, null, null], "borderColor": "hsla(346, 60%, 65%, 0.4)", "backgroundColor": "hsla(346, 60%, 65%, 0.4)", "activeColor": "hsla(346, 85%, 50%, 1)", "borderWidth": 1.5, "tension": 0.1, "fill": false, "spanGaps": true}
+    ];
+
+    datasetsData.forEach(ds => {
+        ds.originalColor = ds.borderColor;
+    });
+
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: originalLabels,
+            datasets: datasetsData
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: { boxWidth: 12, font: { size: 10 } }
+                },
+                tooltip: { mode: 'nearest', intersect: false }
+            },
+            scales: {
+                x: { title: { display: true, text: '評分評審代號（由左至右依平均分數從嚴格到寬鬆排序）', font: { weight: 'bold', size: 13 } } },
+                y: { min: 60, max: 100, title: { display: true, text: '評審打分分數', font: { weight: 'bold', size: 13 } } }
+            },
+            onClick: (e) => {
+                const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+                if (points.length > 0) {
+                    const datasetIndex = points[0].datasetIndex;
+                    highlightDataset(datasetIndex);
+                }
+            }
+        }
+    });
+
+    function highlightDataset(index) {
+        chart.data.datasets.forEach((dataset, i) => {
+            if (i === index) {
+                dataset.borderColor = dataset.activeColor;
+                dataset.backgroundColor = dataset.activeColor;
+                dataset.borderWidth = 3;
+            } else {
+                dataset.borderColor = 'rgba(220, 220, 220, 0.15)';
+                dataset.backgroundColor = 'rgba(220, 220, 220, 0.15)';
+                dataset.borderWidth = 1;
+            }
+        });
+        chart.update();
+    }
+
+    function resetHighlight() {
+        chart.data.datasets.forEach(dataset => {
+            dataset.borderColor = dataset.originalColor;
+            dataset.backgroundColor = dataset.originalColor;
+            dataset.borderWidth = 1.5;
+        });
+        chart.update();
+    }
+</script>
+
+</body>
+</html>
